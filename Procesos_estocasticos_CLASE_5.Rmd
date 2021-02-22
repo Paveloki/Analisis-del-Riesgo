@@ -1,0 +1,184 @@
+---
+title: "Procesos_Estoc"
+author: "Jose Pablo Vazquez"
+date: "4/2/2021"
+output: html_document
+---
+
+```{r librerias, include=FALSE, message=FALSE}
+library(ggplot2)
+library(tibble)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+```
+
+# Procesos estocásticos
+
+**¿Qué es un proceso estocástico?**
+Es una colección de variables aleatorias definidas como un sucesión, cuyo valor va evolucionando a través del tiempo.
+
+**¿Como se diferencia de un proceso determinista?**
+Son procesos en los cuales podemos conocer con exactitud el valor que tomará una variable.
+
+
+## Proceso de Wiener
+
+**Características**
+**1) Es un proceso de Markov.**
+**2) Tiene incrementos independientes.**
+**3) Las variaciones en el proceso en un intervalo de tiempo se distribuyen de manera normal.**
+
+La ecuación de este proceso
+
+$$dW_t = \epsilon\sqrt(dt)$$
+
+La simulación de este proceso es como sigue:
+
+```{r simulacion, include=FALSE}
+n <- 10000
+dt <- 1/n
+datos <- tibble(tiempo= seq(1/n,1,by=1/n), epsilon=rnorm(n), dw = epsilon*sqrt(dt)) ##data frame
+```
+
+
+```{r}
+g1 <- datos %>% ##Concatena funciones, agarra todos los datos y haz una grafica
+  ggplot() +
+  geom_line(aes(tiempo,epsilon), color = "red") +
+  labs(title = "Números Aleatorios", x="Tiempo", y="Valor aleatorio epsilon")#aes = ejes
+
+
+
+g2 <- datos %>% ##Concatena funciones, agarra todos los datos y haz una grafica
+  ggplot() +
+  geom_line(aes(tiempo,dw), color = "blue") +
+  labs(title = "Proceso dW", x="Tiempo", y="Valor dW")#aes = ejes
+
+grid.arrange(g1,g2, ncol = 2)
+```
+
+¿Cómo son las características que definen el proceso? (Esperanza y Varianza)
+
+```{r}
+#Creamos la tabla
+carac <- tibble(Proceso=c("Epsilon","DW"),Media = c(mean(datos$epsilon),mean(datos$dw)), Varianza=c(var(datos$epsilon),var(datos$dw)))
+carac
+
+#Formato a la tabla
+kable(carac, caption = "<center>**Características del proceso**", align = c("c","c","c"), digits = 4) %>% 
+  kable_classic(full_width=F) %>% 
+  row_spec(0, bold = T) %>% 
+  column_spec(1, bold = T, color = "blue")
+```
+
+¿Cómo es W?
+
+$$W_t=W_{t-1}+dW_t$$
+
+
+```{r}
+Wiener <- matrix(0,n,1)
+Wo <- 0
+Wiener[1,1] <- Wo
+for (t in 2:n) {
+  Wiener[t,1]=Wiener[t-1,1]+datos$dw[t]
+}
+datos <- datos %>%
+  mutate(W=Wiener)
+```
+
+
+```{r}
+datos %>% ##Concatena funciones, agarra todos los datos y haz una grafica
+  ggplot() + theme_bw()+
+  geom_line(aes(tiempo,W), color = "orange") +
+  geom_smooth(aes(tiempo,W)) +
+  labs(title = "Comportamiento de la variable 
+       W", x="Tiempo", y="Valor W")#aes = ejes
+
+```
+
+Cuales son los elementos que caracterizan al proceso (Esperanza y su varianza)
+
+¿Como son sus histogramas?
+
+```{r}
+datos %>% 
+  ggplot(aes(dw))+
+  geom_histogram(color="red",fill="pink", bins=120) +
+  labs(title = "Histograma dW")
+
+datos %>% 
+  ggplot(aes(W))+
+  geom_histogram(color="purple",fill="blue", bins=120) +
+  labs (title = "Histograma de W")
+
+```
+
+# Proceso de Wiener Generalizado
+
+Me voy a aventar un spech
+
+$$dx = adt+bdw$$
+Donde a y b con constantes (números)
+
+El drift rate del proceso (Esperanza) esta dado por **a por unidad de tiempo**
+La tasa de Varianza (Varianza) está dada por **b^2 por unidad de tiempo**
+
+```{r}
+a <- 0.3
+b <- 0.15
+dt <- 1/n
+datos2 <- tibble(tiempo= seq(1/n,1,by=1/n), epsilon=rnorm(n), dw = epsilon*sqrt(dt), dX = a*dt + b*dw) ##data frame
+```
+
+
+Graficamos dx
+
+```{r}
+datos2 %>% ##Concatena funciones, agarra todos los datos y haz una grafica
+  ggplot() +
+  geom_line(aes(tiempo,dX), color = "blue") +
+  labs(title = "Proceso dW", x="Tiempo", y="Valor dW")#aes = ejes
+```
+
+¿Como es X?
+
+$$X_t = X_{t-1}+dX_t$$
+
+```{r}
+WG <- matrix(0,n,1)
+Xo <- 0
+WG[1,1] <- Xo
+for (t in 2:n) {
+  WG[t,1]=WG[t-1,1]+datos2$dX[t]
+}
+datos2 <- datos2 %>%
+  mutate(W_g=WG)
+```
+
+```{r}
+datos2 %>% ##Concatena funciones, agarra todos los datos y haz una grafica
+  ggplot() + theme_bw()+
+  geom_line(aes(tiempo,W_g), color = "orange") +
+  geom_smooth(aes(tiempo,W_g)) +
+  labs(title = "Comportamiento de la variable 
+       W_g", x="Tiempo", y="Valor W_g")#aes = ejes
+```
+
+
+#Actividades 
+
+
+
+
+
+
+
+
+
+
+
+
