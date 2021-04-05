@@ -1,0 +1,240 @@
+---
+title: "Modelos ARCH/GARCH"
+author: "José Pablo Vázquez"
+date: "25/3/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes  
+    number_sections: yes
+---
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(PerformanceAnalytics)
+library(quantmod)
+library(lubridate)
+library(moments)
+library(tibble)
+library(fGarch)
+```
+
+# **Bajar los datos y obtener el rendimiento** 
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+clave<-"GFNORTEO.MX"
+datos <- new.env()
+loadSymbols(clave,from="2016-01-01", to=today(), warnings = "FALSE", env = datos)
+```
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+activo<-datos[[clave]]
+precio<-activo[,6]
+Rendimiento<-na.omit(diff(log(precio)))
+Var_Real <- Rendimiento^2
+```
+
+Me decidí por utilizar Grupo Financiero Banorte, bajé el histórico de los precios desde el año 2016 hasta el día de hoy, para pasar a calcular los rendimientos del mismo.
+
+# **Probar que hay independencia de los precios**
+
+Vamos a aplicar el estadistico de J-cuadrada para poder analizar si el comportamiento del precio en cualquier dia depende de cualquier cosa, excepto de los precios anteriores.
+
+Si el valor del estadístico es mayor a 23.20925
+
+Ho: se acepta la prueba que habla de la independencia de los precios
+
+Ha: se rechaza la prueba y los precios son dependientes
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+prueba <- Box.test(precio, fitdf = 10)
+stadistic <- prueba[["statistic"]]
+tibble(stadistic)
+```
+
+Como nuestro valor del estadístico es mayor a 23.20925 se rechaza la prueba de hipotesis nula, lo que nos habla de la dependencia de precios.
+
+# **Hacer uso de la función garchFit contenida en la librería fGarch para estimar los parámetros del modelo**
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch11<-garchFit(formula = ~ garch(1, 1), data = Rendimiento, cond.dist = "norm")
+garch11@fit[["par"]]
+```
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch12<-garchFit(formula = ~ garch(1, 2), data = Rendimiento, cond.dist = "norm")
+garch11@fit[["par"]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch21<-garchFit(formula = ~ garch(2, 1), data = Rendimiento, cond.dist = "norm")
+garch21@fit[["par"]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch22<-garchFit(formula = ~ garch(2, 2), data = Rendimiento, cond.dist = "norm")
+garch22@fit[["par"]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch10<-garchFit(formula = ~ garch(1, 0), data = Rendimiento, cond.dist = "norm")
+garch10@fit[["par"]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+garch20<-garchFit(formula = ~ garch(2, 0), data = Rendimiento, cond.dist = "norm")
+garch20@fit[["par"]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+G11_parametros <- garch11@fit[["par"]]
+G11_ics <- garch11@fit[["ics"]][1]
+G11_func_vero <- garch11@fit[["value"]][["LogLikelihood"]]
+G11_w <- G11_parametros[[2]]
+G11_alpha <- G11_parametros[[3]]
+G11_beta <- G11_parametros[[4]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+G12_parametros <- garch12@fit[["par"]]
+G12_ics <- garch12@fit[["ics"]][1]
+G12_func_vero <- garch12@fit[["value"]][["LogLikelihood"]]
+G12_w <- G12_parametros[[2]]
+G12_alpha <- G12_parametros[[3]]
+G12_beta1 <- G12_parametros[[4]]
+G12_beta2 <- G12_parametros[[5]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+G21_parametros <- garch21@fit[["par"]]
+G21_ics <- garch21@fit[["ics"]][1]
+G21_func_vero <- garch21@fit[["value"]][["LogLikelihood"]]
+G21_w <- G21_parametros[[2]]
+G21_alpha1 <- G21_parametros[[3]]
+G21_alpha2 <- G21_parametros[[4]]
+G21_beta <- G21_parametros[[5]]
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+G22_parametros <- garch22@fit[["par"]]
+G22_ics <- garch22@fit[["ics"]][1]
+G22_func_vero <- garch22@fit[["value"]][["LogLikelihood"]]
+G22_w <- G22_parametros[[2]]
+G22_alpha1 <- G22_parametros[[3]]
+G22_alpha2 <- G22_parametros[[4]]
+G22_beta1 <- G22_parametros[[5]]
+G22_beta2 <- G22_parametros[[6]]
+```
+Ecuación de modelo GARCH (1,1):
+
+$$\sigma^2 = `r G11_w` + `r G11_alpha`R^2_{t-1} + `r G11_beta`\sigma^2_{t-1}$$
+
+Ecuación de modelo GARCH(1,2):
+
+$$\sigma^2 = `r G12_w` + `r G12_alpha`R^2_{t-1} + `r G12_beta1`\sigma^2_{t-1} + `r G12_beta2`\sigma^2_{t-2}$$
+
+
+Ecuación de modelo GARCH (2,1):
+
+$$\sigma^2 = `r G21_w` + `r G21_alpha1`R^2_{t-1} + `r G21_alpha2`R^2_{t-2} + `r G21_beta`\sigma^2_{t-1}$$
+
+Ecuación de modelo GARCH(2,2):
+
+$$\sigma^2 = `r G22_w` + `r G22_alpha1`R^2_{t-1} + `r G22_alpha2`R^2_{t-2} + `r G22_beta1`\sigma^2_{t-1} + `r G22_beta2`\sigma^2_{t-2}$$
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+A1_parametros <- garch10@fit[["par"]]
+A1_ics <- garch10@fit[["ics"]][1]
+A1_func_vero <- garch10@fit[["value"]][["LogLikelihood"]]
+A1_w <- A1_parametros[[2]]
+A1_alpha <- A1_parametros[[3]]
+```
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+A2_parametros <- garch20@fit[["par"]]
+A2_ics <- garch20@fit[["ics"]][1]
+A2_func_vero <- garch20@fit[["value"]][["LogLikelihood"]]
+A2_w <- A2_parametros[[2]]
+A2_alpha1 <- A2_parametros[[3]]
+A2_alpha2 <- A2_parametros[[4]]
+```
+
+Ecuación de modelo ARCH(1):
+
+$$\sigma^2 = `r A1_w` + `r A1_alpha`R^2_{t-1}$$
+
+
+Ecuación de modelo ARCH(2):
+
+$$\sigma^2 = `r A2_w` + `r A2_alpha1`R^2_{t-1} + `r A2_alpha2`R^2_{t-2}$$
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+tibble(A1_ics, A2_ics, G11_ics, G12_ics, G21_ics, G22_ics)
+```
+
+Podemos ver que gracias al criterio del menor AIC, seleccionamos el modelo GARCH(1,1) ya que es el modelo que mejor se ajusta a los datos.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+tibble(A1_func_vero, A2_func_vero, G11_func_vero, G12_func_vero, G21_func_vero, G22_func_vero)
+```
+
+Además, podemos confirmar que GARCH(1) gracias a la suma de las funciones de verosimilitud, ya que la de GARCH(1,1) resultó ser la menor, con un valor de:
+
+$$`r G11_func_vero``$$
+
+# **Una vez que tenemos el modelo ARCH/GARCH adecuado. Comparamos las estimaciones del modelo contra las estimaciones reales**
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+estimaciones_GARCH11 <- sqrt(garch11@h.t)
+volatilidad_real <- sqrt(Var_Real)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+Volatilidad <- merge.xts(volatilidad_real, estimaciones_GARCH11)
+names(Volatilidad) <- c("Vol_Real", "Vol_GARCH(1,1)")
+plot(Volatilidad,legend.loc="topleft",lwd = 0.5, col= c("#009999","#330000"), bg = "#CCCCFF")
+```
+
+Gracias a la gráfica, podemos observas que nuestras estimaciones de volatilidad tiene un comportamiento parecido a la volatilidad real, sin embargo, existen muchos picos distanciados de nuestras estimaciones con el modelo ARCH(1)
+
+
+# **Efectuar una estimación futura de la volatilidad. Con el comando predict**
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+mod <- predict(garch11, n.ahead=1)
+mod <- mod[3]
+tibble(mod)
+```
+
+Obtenemos que la volatilidad para el día de mañana sería de 2.44% con el comando predict, sobre nuestro modelo GARCH(1,1)
+
+
+# **Determinar una estimación para la volatilidad de la misma fecha que la del GARCH con los códigos de Promedio Móvil y EWMA. compara los resultados obtenidos por los tres modelos**
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+EWMA <- 0.01789422
+Prom_Movil <- 0.02808049
+
+tibble(mod, EWMA, Prom_Movil)
+```
+
+Comparando con los modelos de Promedio Móviles y EWMA, tenemos que la volatilidad de Promedios Móviles resulta la predicción de volatilidad mas alta con 2.80%, sin embargo, considero que la estimación con el modelo GARCH(1,1) es mucho mas exata que EWMA y Promedios Móviles.
+
+
+
+
+
