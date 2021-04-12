@@ -1,0 +1,86 @@
+---
+title: "Vol Historica e Implicita"
+author: "Jose Pablo Vazquez"
+date: "4/5/2021"
+output: html_document
+---
+
+
+
+Conocimiento de clase que describe lo aprendido 
+
+
+
+**Vol implicita :**  es una proyección de la magnitud de un movimiento anticipado del mercado, independientemente de la dirección. En otras palabras, la volatilidad implícita refleja el rango y la incertidumbre sobre cuán alto o bajo podría subir o bajar la cotización de un activo subyacente.
+¿Como se diferencia de la vol historica?
+La volatilidad histórica es la volatilidad basada en el precio histórico del subyacente. Tiene en cuenta lo que ha ocurrido en el pasado. Mientras que la volatilidad implícita está basada en el precio de las opciones, y tiene en cuenta lo que puede ocurrir en el futuro.
+
+CONSIDEREMOS LA SIGUIENTE INFORMACION SOBRE EL PRECIO LAS CARACTERISTICAS DE UNA OPCION
+
+TIPO: CALL
+PRECIO : 7.15
+SUBYACENTE : 14.18
+VENCIMIENTO : 9 meses (timepo esta anual) t = 3/4
+Tasa de interes : 4.4 % (lo que serian los cetes)
+
+S = last izquierda arriba 14.18
+k = Strike
+r = cetes 4.4 %
+tt = tiempo 3/4 (9 meses)
+d = dividendos 0 
+
+Precio = last call fecha de vencimiento de diciembre 
+¿Que valor sigma, hace posible en el modelo de BS que 7.15 sea el precio de una
+call con las caracteristicas señaladas?  
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(derivmkts)
+library(ragtop)
+library(tibble)
+```
+
+Para buscar la volatilidad implicita hacemos lo siguiente:
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+k8 <- bscallimpvol(s=14.18, k=8,r=.044,tt=3/4, d=0,price=7.15)
+k8.5 <- bscallimpvol(s=14.18, k=8.5,r=.044,tt=3/4, d=0,price=6.71)
+k9 <- bscallimpvol(s=14.18, k=9,r=.044,tt=3/4, d=0,price=6.28)
+k9.5 <- bscallimpvol(s=14.18, k=9.5,r=.044,tt=3/4, d=0,price=5.86)
+k12 <- bscallimpvol(s=14.18, k=12,r=.044,tt=3/4, d=0,price=3.97)
+k15.5 <- bscallimpvol(s=14.18, k=15.5,r=.044,tt=3/4, d=0,price=2.10)
+k16.5 <- bscallimpvol(s=14.18, k=16.5,r=.044,tt=3/4, d=0,price=1.74)
+```
+
+1) Usar las imagenes proporcionadas y sacar la volatilidad implicita para todas las opciones CALL
+
+Construir una tabla como esta 
+
+K    V_IMP
+8    0.7883
+8.5
+9
+9.5
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+k <- c(8,8.5,9,9.5,12,15.5,16.5)
+Vol_implicita <- c(k8,k8.5,k9,k9.5,k12,k15.5,k16.5)
+
+tibble(k,Vol_implicita)
+```
+
+
+
+
+2) Graficar k contra la vol_implicita
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+
+k <- c(8,8.5,9,9.5,12,15.5,16.5)
+Vol_implicita <- c(k8,k8.5,k9,k9.5,k12,k15.5,k16.5)
+plot(k, Vol_implicita, type="l")
+```
+
+
+3) Investigar que es la sonrisa de volatilidad 
+
+Se refiere a la medida de frecuencia de precios de un activo, es decir las posibles variaciones que los mercados financieros reflejarían de acuerdo a la estabilidad o a la incertidumbre. Por lo tanto, la sonrisa de la volatilidad representa una forma gráfica al trazar el precio de un ejercicio
+
