@@ -1,0 +1,150 @@
+---
+title: "VaR Paramétrico"
+author: "José Pablo Vázquez"
+date: "19/4/2021"
+output: html_document
+---
+
+1) Bajar los precios de dos activos
+
+```{r}
+library(quantmod)
+library(lubridate)
+clave1<-"GFNORTEO.MX"
+clave2 <- "BIMBOA.MX"
+datos1 <- new.env()
+datos2 <- new.env()
+loadSymbols(clave1,from="2016-01-01", to=today(), warnings = "FALSE", env = datos1)
+loadSymbols(clave2,from="2016-01-01", to=today(), warnings = "FALSE", env = datos2)
+
+activo1 <- datos1[[clave1]]
+activo2 <- datos2[[clave2]]
+
+precio1 <- na.omit(activo1[,6])
+precio2 <- na.omit(activo2[,6])
+precios <- merge.xts(precio1,precio2)
+```
+
+
+2) Determinar una composición, es decir, construir un portafolio ficticio. Obtener el valor inicial del portafolio **Vo**
+
+```{r}
+n <- nrow(precios)
+a1 <- 500 #Cantidad de acciones del activo 1
+a2 <- 700 #Cantidad de acciones del activo 2
+pi_a1 <- as.numeric(precios[n,1])
+pi_a2 <- as.numeric(precios[n,2])
+vi <- pi_a1*a1 + pi_a2*a2
+```
+
+
+3) Volatilidad del portafolio.
+
+$\sigma_p = \sqrt{w*C*w^T}$
+
+Necesitamos el vector de pesos w
+
+```{r}
+w1 <- (a1*pi_a1)/vi
+w2 <- (a2*pi_a2)/vi
+w <- cbind(w1,w2)
+```
+
+
+Matriz Varianzas Covarianzas
+
+Para ello obtener el rendimiento de los activos.
+
+```{r}
+rend1 <- na.omit(diff(log(precio1)))
+rend2 <- na.omit(diff(log(precio2)))
+rend <- merge.xts(rend1,rend2)
+C <- cov(rend)
+```
+
+
+Vector w transpuesto
+
+```{r}
+t(w) # vector transpuesto
+```
+
+
+Multiplicamos y sacamos la raiz
+
+```{r}
+#%*% #Multiplicacion de matriz en R
+#Estimacion de la volatilidad del portafolio para un dia
+sigma_port <- sqrt(w%*%C%*%t(w))
+```
+
+
+4) Determinar un valor de Z
+
+Si el VaR es al 99%
+
+```{r}
+Z99 <- qnorm(0.01)
+```
+
+
+Si el VaR es al 95%
+
+```{r}
+Z95 <- qnorm(0.05)
+```
+
+
+Si el VaR es al 90%
+
+```{r}
+Z90 <- qnorm(0.1)
+```
+
+
+5) Calcular el VaR paramétrico para los tres niveles.
+
+```{r}
+VaR99 <- vi*sigma_port*Z99
+```
+
+
+```{r}
+VaR95 <- vi*sigma_port*Z95
+```
+
+
+```{r}
+VaR90 <- vi*sigma_port*Z90
+```
+
+Se asumio que el comportamiento de la funcion es normal estandar.
+
+No se hacen estimaciones de valores futuros, asumimos que hay comportamiento de una normal.
+
+Composición óptima del portafolio para minimizar el VaR
+
+```{r}
+w1_opt <- (2*C[2,2] - 2*C[1,2]) / (2*C[1,1] + 2*C[2,2] -4*C[1,2])
+w2_opt <-  1-w1_opt
+w_opt <- cbind(w1_opt,w2_opt)
+```
+
+
+Con esa composición podemos obtener el VaR mínimo
+
+```{r}
+sigma_opt <- sqrt(w_opt%*%C%*%t(w_opt))
+VaR_minimo <- vi*sigma_opt*Z99
+VaR_minimo
+```
+
+
+
+
+
+
+
+
+
+
