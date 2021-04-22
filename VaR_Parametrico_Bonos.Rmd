@@ -1,0 +1,64 @@
+---
+title: "VaR Paramétrico Bono"
+date: "22/4/2021"
+author: "Jose Pablo Vazquez Tello"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes  
+    number_sections: yes
+---
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(quantmod)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Periodo <- 9
+Periodo_secu <- seq(1:Periodo)
+tasa_cupon <- 0.135
+tasa_interes <- 0.09
+sigma <- 0.00927
+Valor_nominal <- 1000
+Z = qnorm(0.01)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+bono <- data.frame(
+  "t años" = 1:Periodo,
+  "Flujo del Bono" = Valor_nominal*tasa_cupon ,
+  row.names = paste(Periodo_secu),
+  "Vpn bono" = (Valor_nominal*tasa_cupon) / ((1+tasa_interes)^Periodo_secu),
+  "wt" = numeric(length = Periodo),
+  "t(wt)" = numeric(length = Periodo)
+)
+bono[Periodo,2] <- Valor_nominal+(Valor_nominal*tasa_cupon)
+bono[Periodo,3] <- bono[Periodo,2] /((1+tasa_interes)^Periodo) 
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VPN_total <- sum(bono[1:Periodo,3])
+bono[1:Periodo,4] <- bono[1:Periodo,3] / VPN_total
+bono[1:Periodo,5] <- bono[1:Periodo,4] * bono[1:Periodo,1]
+t_wt <- sum(bono[1:Periodo,5]) 
+bono
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+D_mod <- t_wt/(1+tasa_interes)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VaR <-  Z*sigma*tasa_interes*D_mod*VPN_total
+VaR
+```
+
