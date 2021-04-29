@@ -1,0 +1,83 @@
+---
+title: "Tarea VaR Paramétrico de Bonos"
+author: "José Pablo Vázquez"
+date: "26/4/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes  
+    number_sections: yes
+---
+
+# **Cálculo del VaR para instrumentos de deuda**
+
+El VaR del bono indica la máxima pérdida que podemos enfrentas como consecuencia de un cambio en la tasa de interés. Para estimar el VaR es necesarios analizar como cambio el precio del bono cuando cambia la tasa de interés del bono (duración modificada).
+
+El precio de un bono consiste en el valor presente de todos los flujos de efectivo que generará a lo largo de su vigencia. Otro elemento necesario para el VaR de los bonos es el vencimiento del mismo (duración). La duración de un bono es el promedio ponderado de las veces de cada pago, cupón o principal que realiza el bono.
+
+$$D = \sum_{t=1}^T tw_t$$
+
+La duración modificada relaciona el precio del bono con la tasa de interés por lo cual se tiene que
+
+$$D^* = \frac{D}{1+I}$$
+
+Para calcular el VaR podemos estimarlo primero con una función de pérdidas y ganancias que surgiría del cmabio en el precio del bono, de manera que:
+
+$$W = B_{t+1} - B_t$$
+
+Siendo B el precio del bono. La fórmula del VaR estaría dada por:
+
+$$VaR = [Z_\alpha \sigma_I]D^*B_tI_t$$
+
+Recapitulando, para obtener el cálculo del VaR requerimos de:
+
+1. Una probabilidad Z
+2. La volatilidad de la tasa de rendimiento del bono
+3. La duración modificada
+4. La sumatoria del valor presente neto
+5. La tasa cupón
+
+# **Ejercicio 1**
+Considera un portafolio que tiene un sólo bono (que llamaremos BONOA) con un valor nominal de $55,000 que paga una atsa cupón semestral del 5% y tiene un fecha de vencimiento de 4 años. La tasa de interés actual es de 6.5%, y el próximo cambio en la tasa será dentro de 7 días, determina:
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(quantmod)
+library(tibble)
+```
+
+
+a) El precio del bono.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Valor_nom <- 55000
+tasa_cupon <- (0.05*2)/252 #tasa semestral
+Periodo <- 7 #años
+Periodo_secu <- seq(1:Periodo)
+tasa_interes <- 0.065 #
+```
+
+
+```{r}
+Bono_price <- (Valor_nom*tasa_cupon)/ ((1+tasa_interes)^Periodo_secu) 
+VPN_total <- sum(Bono_price)+Valor_nom
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
