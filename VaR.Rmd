@@ -1,0 +1,167 @@
+---
+title: "VaR"
+author: "José Pablo Vázquez"
+date: "12/4/2021"
+output: html_document
+---
+
+VaR no paramétrico (No suponemos una distribución de probabilidad específica)
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(PerformanceAnalytics)
+library(quantmod)
+library(lubridate)
+library(moments)
+library(tibble)
+library(fGarch)
+```
+
+Comencemos suponiendo un portafolio determinado
+
+Activos: BANORTE y BIMBO
+Cantidad de cada activo: BANORTE 100 acciones y 50 acciones de BIMBO
+Valor Actual del Portafolio
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+clave1<-"GFNORTEO.MX"
+clave2 <- "BIMBOA.MX"
+datos1 <- new.env()
+datos2 <- new.env()
+loadSymbols(clave1,from="2016-01-01", to=today(), warnings = "FALSE", env = datos1)
+loadSymbols(clave2,from="2016-01-01", to=today(), warnings = "FALSE", env = datos2)
+
+activo1 <- datos1[[clave1]]
+activo2 <- datos2[[clave2]]
+
+precio1 <- na.omit(activo1[,6])
+precio2 <- na.omit(activo2[,6])
+precios <- merge.xts(precio1,precio2)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+n <- nrow(precios)
+pi_a1 <- as.numeric(precios[n,1])
+pi_a2 <- as.numeric(precios[n,2])
+
+vi <- 100 * pi_a1 + 50 * pi_a2
+
+fecha_inicial <- date(precios[n,1])
+```
+
+Hoy mi activo vale 13,785.5
+
+
+Ya que tenemos el valor inicial vamos a calcular el valor para el día de mañana. Este proceso requiere de la estimación de precios futuros (mañana). El proceso de generación de precios que usaremos se llama simulación histórica.
+
+Cada posible valor de St, representa un posible escenarios de comportamiento. Por lo tanto, vamos a tener tantos escenarios como rendimientos de precio observemos.
+
+$$S_{t+1}=S_o+(1+R_{t-1322})$$
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+rend1 <- na.omit(diff(log(precio1)))
+rend2 <- na.omit(diff(log(precio2)))
+rend <- merge.xts(rend1, rend2)
+
+esc_est <- seq(1:(n-1))
+pe_a1 <- as.data.frame(pi_a1*(1+rend[,1]), row.names = paste("Esc", esc_est))
+pe_a2 <- as.data.frame(pi_a2*(1+rend[,2]), row.names = paste("Esc", esc_est))
+```
+
+
+Ya que tenemos posibles valores de precios para cada activo, vamos a estimar el valor del portafolio en cada uno de los posibles escenarios.
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+vp_est <- pe_a1*100 + pe_a2*50
+names(vp_est) <- fecha_inicial+1
+```
+
+Construyamos ahora una funcion de pérdidas y ganancias.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+fpg <- vp_est-vi 
+hist(fpg[,1], n=30, xlab = "Pesos" , main = paste("Función de P/G para ", fecha_inicial))
+```
+
+
+Con la función de pérdidas/ganancias, podemos determinar el VaR usando los cuantiles de la distribución.
+
+De manera que el valor del VaR esta dado por:
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VaR99 <- quantile(fpg[,1],.01)
+VaR95 <- quantile(fpg[,1],.05)
+VaR90 <- quantile(fpg[,1],.10)
+VaR <- data.frame(VaR99, VaR95, VaR90)
+tibble(VaR)
+```
+
+Grafiquemos el valor del VaR en cada nivel en la función de perdidas y ganancias.
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+hist(fpg[,1], n=30, xlab = "Pesos" , main = paste("Función de P/G para ", fecha_inicial))
+abline(v = VaR99, col="red", lwd=2)
+abline(v = VaR95, col="blue", lwd=2)
+abline(v = VaR90, col="green", lwd=2)
+text(600,150, paste("Valor inicial", formatC(vi, format = "f",2)), col="black")
+text(600,130, paste("VaR99", formatC(VaR99, format = "f",2)), col="red")
+```
+
+
+Comprobación del VaR
+
+Backtesting
+
+
+*Construir el valor real histórico del portafolio*
+
+```{r}
+vp_real <- 100*precios[,1] + 50*precios[,2]
+```
+
+
+*Calcular las ganancias/perdidas reales del portafolio*
+
+```{r}
+perd_gan_real <- na.omit(diff(vp_real))
+```
+
+
+*Comparar cada ganancia/pérdida con el valor del VaR al 99%*
+
+```{r}
+backtest_Var99 <- ifelse(perd_gan_real<VaR99,1,0)
+plot(backtest_Var99)
+```
+
+
+*Contas las excepciones (una excepción es una situación en la cual, la pérdida es mas grande que el VaR)*
+
+```{r}
+sum(backtest_Var99)
+```
+
+*Sacar la proporción respecto al total*
+
+```{r}
+(sum(backtest_Var99)/(n-1)) * 100
+```
+
+Esto quiere decir que hubo .68% de excepciones, esperariamos cuando mucho un 1% de excepciones. En este caso hubo sólo .68% por lo cual el VaR si refleja la máxima pérdida para un día en la tenencia de este portafolio. En consecuencia mi valor de VaR al 99% es adecuado.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

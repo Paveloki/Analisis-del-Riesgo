@@ -27,7 +27,7 @@ precio<-activo[,6]
 Rendimiento<-na.omit(diff(log(precio)))
 ```
 
-El comportamiento real del activo considerando la primera estimación de varianza para cada caso es la raíz del rendimeinto al cuadrado.
+El comportamiento real del activo considerando la primera estimación de volatilidad para cada caso es la raíz del rendimeinto al cuadrado.
 
 $$\sigma_i = \sqrt{R_i^2}$$
 

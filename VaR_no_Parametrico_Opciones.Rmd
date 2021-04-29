@@ -1,0 +1,99 @@
+---
+title: "VaR no Paramétrico Opciones"
+date: "26/4/2021"
+author: "Jose Pablo Vazquez Tello"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes  
+    number_sections: yes
+---
+
+Valor en riesgo de las opciones de forma no paramétrica
+
+Para calcular el valor en riesgo de una opción, la utilidad de una posición larga call está determinada por St-K, donde no se considera la prima, es la diferencia entre el precio spot en la fecha de vencimiento y el precio de ejercicio si se fuera a ejercer, en caso contrario, la utilidad es 0.
+
+Hay que recordad que el VaR de forma no paramétrica, no considera el valor de delta, ni el valor en concreto de una probabilidad Z, se debe calcular n escenarios de probabilidades entre 0 y 1, para calcular el Valor en Riesgo.
+
+- Simular Precio
+- Valor Intrínseco
+- Función de pérdidas y ganancias
+- Calcular el VaR con la funcion anterior
+
+
+- Simular el precio
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(tibble)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+St <- 50
+rf <- 0.05 #tasa de interes 
+sigma <- 0.15 #volatilidad anualizada
+n <- 10000
+aleatorio <- runif(n)
+z <- qnorm(aleatorio)
+St_1 <- St*exp(rf-sigma^2 *0.5 + z*sigma)
+tibble(St_1)
+```
+
+
+- Valor Intrínseco de la opción
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+t <- 1
+k <- 48
+lcall <- exp(-rf*t)*pmax(St_1-k,0)
+lput <- exp(-rf*t)*pmax(k-St_1,0)
+scall <- -exp(-rf*t)*pmax(St_1-k,0)
+sput <- -exp(-rf*t)*pmax(k-St_1,0)
+tibble(lcall,lput,scall,sput)
+```
+
+
+- Función pérdidas y ganancias
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+fpg_lc <-lcall-5
+fpg_lp <-lput-3  
+fpg_sc <-scall-5  
+fpg_sp <-sput-3  
+tibble(fpg_lc, fpg_lp, fpg_sc, fpg_sp)
+```
+
+
+VaR al 99% y 95% de las 4 opciones
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VaR99_lc <- quantile(fpg_lc, 0.01)
+VaR99_lp <- quantile(fpg_lp, 0.01)
+VaR99_sc <- quantile(fpg_sc, 0.01)
+VaR99_sp <- quantile(fpg_sp, 0.01)
+tibble(VaR99_lc, VaR99_lp, VaR99_sc, VaR99_sp)
+```
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VaR95_lc <- quantile(fpg_lc, 0.05)
+VaR95_lp <- quantile(fpg_lp, 0.05)
+VaR95_sc <- quantile(fpg_sc, 0.05)
+VaR95_sp <- quantile(fpg_sp, 0.05)
+tibble(VaR95_lc, VaR95_lp, VaR95_sc, VaR95_sp)
+```
+
+1. Los precios estimados, ¿tiene una temporalidad específica?
+
+No, para calcular los precios estimados no se requiere definir una temporalidad, se define n probabilidades.
+
+2. ¿Por qué el valor intrínseco de la opción en la posición corta es negativo bajo cualquiera de los escenarios?
+
+Por que, estamos calculando el valor potencial de la opcion en terminos contrarios.
+
+3. ¿Por la distribución no es simétrica?
+Por que, los valores giran alrededor de la maxima pérdida, en caso de las opciones long, la máxima pérdida es la pérdida de la prima.
