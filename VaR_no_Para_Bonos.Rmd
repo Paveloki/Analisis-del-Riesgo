@@ -1,0 +1,110 @@
+---
+title: "VaR Bono no Paramet"
+author: "José Pablo Vázquez"
+date: "29/4/2021"
+output: html_document
+---
+
+Valor en Riesgo de un bono con una metoodologia no paramétrica, no usamos parámetros, no asumimos un comportamiento.
+
+Usaremos tasa de un bono a tres años para nuestro metodoologia.
+
+El VaR no Parametrico, consiste en simular tasas de interes, usando información histórica. Ya que hayamos usado la información histórica para simular tasas futuras, estimaremos el precio del bono bajo cada una de las posibles tasas futuras.
+
+Luego vamos a comprar el precio estimado bajo cada escenario, contra el precio inicial del bono. Esta será la función de pérdidas y ganancias, con esta función determinaremos el VaR no paramétrico.
+
+```{r}
+library(readxl)
+library(lubridate)
+library(PerformanceAnalytics)
+library(tibble)
+
+TB <- read_xlsx("TB.xlsx")
+TB <- subset(TB, SF43883!="N/E")
+TB$SF43883 <- as.numeric(TB$SF43883)
+Tasa <- xts(TB$SF43883, order.by = date(TB$Fecha))
+names(Tasa) <- c("Tasa")
+plot(Tasa)
+```
+
+
+Para el VaR seguimos los siguientes pasos
+
+1. Determinar el precio de un Bono (determinados carac) bajo la tasa mas actual
+
+```{r}
+t <- 3 #Vencimiento en años
+vn <- 2500 #Valor nominal
+tc <- 0.05 #Tasa cupon
+m <- 2 #cuantas veces al año se paga el cupón
+Periodo <- t*m #flujos totales
+periodo_secu <- seq(1:Periodo)
+```
+
+
+¿Cuanto vale un bono con estas caractéristicas hoy?
+
+```{r}
+n <- nrow(Tasa)
+Tasa_inicial <- as.numeric(Tasa[n])/100 
+```
+
+
+```{r}
+bono <- data.frame(
+  "t semestres" = 1:Periodo,
+  "Flujo del Bono" = vn*tc ,
+  row.names = paste(periodo_secu),
+  "Vpn bono" = (vn*tc) / ((1+Tasa_inicial)^(periodo_secu/m))
+)
+bono[Periodo,2] <- vn+(vn*tc)
+bono[Periodo,3] <- bono[Periodo,2] /((1+Tasa_inicial)^(Periodo/m)) 
+
+VPN_total <- sum(bono[1:Periodo,3])
+VPN_total
+```
+
+2. Estimar tasa de interés futuras usando simulación histórica
+
+```{r}
+Trend <- na.omit(diff(log(Tasa)))
+esc_est <- seq(1:(n-1))
+Tasa_est <- as.data.frame(Tasa_inicial*(Trend+1), row.names = paste("Esc_",esc_est))
+```
+
+
+3. ¿Cuanto valdría el bono, de observarse las tasas estimadas?
+
+construir 275 posibles precio del bono, uno bajo cada una de las tasas estimadas.
+
+
+```{r}
+cupon <- vn*tc
+flujos <- matrix(0,Periodo,n)
+
+for (i in 1:Periodo-1){
+  flujos[i,1] = cupon
+}
+flujos[Periodo,1] <- vn+cupon
+
+for (i in 1:Periodo){
+  for (j in 2:n){
+    flujos[i,j] = flujos[i,1]/(1+Tasa_est[j-1,1])^(i/m)
+  }
+}
+pb <- matrix(colSums(flujos))
+pb <- matrix(pb[2:n])
+```
+
+Paso 4: Construir una función de pérdidas y ganancias
+
+```{r}
+fpg <- pb-VPN_total
+hist(fpg, n=30)
+VaR99 <- quantile(fpg[,1],0.01)
+VaR99
+abline(v=VaR99, col="red", lwd=2)
+```
+
+
+
