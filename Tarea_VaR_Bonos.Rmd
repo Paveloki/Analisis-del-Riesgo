@@ -1,0 +1,264 @@
+---
+title: "Tarea VaR Paramétrico de Bonos"
+author: "José Pablo Vázquez"
+date: "26/4/2021"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    number_sections: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes  
+    number_sections: yes
+---
+
+# **Cálculo del VaR para instrumentos de deuda**
+
+El VaR del bono indica la máxima pérdida que podemos enfrentas como consecuencia de un cambio en la tasa de interés. Para estimar el VaR es necesarios analizar como cambio el precio del bono cuando cambia la tasa de interés del bono (duración modificada).
+
+El precio de un bono consiste en el valor presente de todos los flujos de efectivo que generará a lo largo de su vigencia. Otro elemento necesario para el VaR de los bonos es el vencimiento del mismo (duración). La duración de un bono es el promedio ponderado de las veces de cada pago, cupón o principal que realiza el bono.
+
+$$D = \sum_{t=1}^T tw_t$$
+
+La duración modificada relaciona el precio del bono con la tasa de interés por lo cual se tiene que
+
+$$D^* = \frac{D}{1+I}$$
+
+Para calcular el VaR podemos estimarlo primero con una función de pérdidas y ganancias que surgiría del cmabio en el precio del bono, de manera que:
+
+$$W = B_{t+1} - B_t$$
+
+Siendo B el precio del bono. La fórmula del VaR estaría dada por:
+
+$$VaR = [Z_\alpha \sigma_I]D^*B_tI_t$$
+
+Recapitulando, para obtener el cálculo del VaR requerimos de:
+
+1. Una probabilidad Z
+2. La volatilidad de la tasa de rendimiento del bono
+3. La duración modificada
+4. La sumatoria del valor presente neto
+5. La tasa cupón
+
+# **Ejercicio 1**
+Considera un portafolio que tiene un sólo bono (que llamaremos BONOA) con un valor nominal de $55,000 que paga una tasa cupón semestral del 5% y tiene un fecha de vencimiento de 4 años. La tasa de interés actual es de 6.5%, y el próximo cambio en la tasa será dentro de 7 días, determina:
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(quantmod)
+library(tibble)
+library(lubridate)
+library(PerformanceAnalytics)
+```
+
+
+a) El precio del bono.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Valor_nom <- 55000 #Valor nominal
+tasa_cupon <- 0.05 #tasa semestral
+t <- 4 #Vencimiento años
+m <- 2 #Pagos al año
+n_flujos <- t*m
+Periodo_secu <- seq(1:n_flujos)
+tasa_interes <- 0.065 #
+```
+
+
+el precio del bono es:
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+bono <- data.frame(
+  "t semestres" = 1:n_flujos,
+  "Flujo del Bono" = Valor_nom*tasa_cupon ,
+  row.names = paste(Periodo_secu),
+  "Vpn bono" = (Valor_nom*tasa_cupon) / ((1+tasa_interes)^(Periodo_secu/m)),
+  "wt" = numeric(length = n_flujos),
+  "t(wt)" = numeric(length = n_flujos)
+)
+bono[n_flujos,2] <- Valor_nom+(Valor_nom*tasa_cupon)
+bono[n_flujos,3] <- bono[n_flujos,2] /((1+tasa_interes)^(n_flujos/m)) 
+
+VPN_total <- sum(bono[1:n_flujos,3])
+VPN_total
+```
+
+
+b) La duración, así como la duración modificada
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VPN_total <- sum(bono[1:n_flujos,3])
+bono[1:n_flujos,4] <- bono[1:n_flujos,3] / VPN_total
+bono[1:n_flujos,5] <- bono[1:n_flujos,4] * bono[1:n_flujos,1]
+t_wt <- (sum(bono[1:n_flujos,5]))/2
+bono
+```
+
+Duración del bono
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+sum(bono[,5])/2
+```
+
+
+Duración modíficada
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+D_mod <- t_wt/(1+tasa_interes)
+D_mod
+```
+
+
+c) Si la volatilidad de la tasa de interés del bono es de 0.75%, determina la volatilidad del bono
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+sigma <- 0.0075
+volatilidad_bono <- sigma*D_mod*tasa_interes *100
+tibble(volatilidad_bono)
+```
+
+
+d) Determina el VaR del bono al 99% de confianza
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+Z = qnorm(0.01)
+VaR <- Z*sigma*tasa_interes*D_mod*VPN_total
+tibble(VaR)
+```
+
+
+e) ¿Cuál es la temporalidad del VaR?
+
+La temporalidad del VaR es semestral, ya que, la tasa cupón asignada a nuestro bono BONOA tiene pagos de manera semestral.
+
+
+# **Ejercicio 2**
+Considera un portafolio que tiene un sólo bono (que llamaremos BONOB) con un valor nominal de $13,000 que paga una tasa cupón anual del 1% y tiene un fecha de vencimiento de 12 años. La tasa de interés actual es de 3.5%, y el próximo cambio en la tasa será dentro de 7 días, determina:
+
+
+a) El precio del bono.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+Valor_nom2 <- 13000 #Valor nominal
+tasa_cupon2 <- 0.01 #tasa anual
+t2 <- 12 #Vencimiento años
+m2 <- 1 #Pagos al año
+n_flujos2 <- t2*m2
+Periodo_secu2 <- seq(1:n_flujos2)
+tasa_interes2 <- 0.035 #
+```
+
+
+el precio del bono es:
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+bono2 <- data.frame(
+  "t años" = 1:n_flujos2,
+  "Flujo del Bono" = Valor_nom2*tasa_cupon2 ,
+  row.names = paste(Periodo_secu2),
+  "Vpn bono" = (Valor_nom2*tasa_cupon2) / ((1+tasa_interes2)^(Periodo_secu2/m2)),
+  "wt" = numeric(length = n_flujos2),
+  "t(wt)" = numeric(length = n_flujos2)
+)
+bono2[n_flujos2,2] <- Valor_nom2+(Valor_nom2*tasa_cupon2)
+bono2[n_flujos2,3] <- bono2[n_flujos2,2] /((1+tasa_interes2)^(n_flujos2/m2)) 
+
+VPN_total2 <- sum(bono2[1:n_flujos2,3])
+VPN_total2
+```
+
+
+b) La duración, así como la duración modificada
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VPN_total2 <- sum(bono2[1:n_flujos2,3])
+bono2[1:n_flujos2,4] <- bono2[1:n_flujos2,3] / VPN_total2
+bono2[1:n_flujos2,5] <- bono2[1:n_flujos2,4] * bono2[1:n_flujos2,1]
+t_wt2 <- (sum(bono2[1:n_flujos2,5]))
+bono2
+```
+
+Duración del bono
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+sum(bono2[,5])
+```
+
+
+Duración modíficada
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+D_mod2 <- t_wt2/(1+tasa_interes2)
+D_mod2
+```
+
+
+c) Si la volatilidad de la tasa de interés del bono es de 0.75%, determina la volatilidad del bono
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+sigma2 <- 0.0075
+volatilidad_bono2 <- sigma2*D_mod2*tasa_interes2 *100
+tibble(volatilidad_bono2)
+```
+
+
+d) Determina el VaR del bono al 99% de confianza
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+Z2 = qnorm(0.01)
+VaR2 <- Z2*sigma2*tasa_interes2*D_mod2*VPN_total2
+tibble(VaR2)
+```
+
+
+e) ¿Cuál es la temporalidad del VaR?
+
+La temporalidad del VaR es anual, ya que, la tasa cupón asignada a nuestro bono BONOB tiene pagos de manera anual.
+
+
+# **Ejercicio 3**
+Usar la relación entre el VaR individual y el VaR del portafolio, para determinar el VaR de un portafolio que contiene el BONOA y BONOB previamente especificados. Supón que la correlación entre las tasas de interés de mabos bonos es de 25%.
+
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+VaRA <- as.numeric(VaR) 
+VaRB <- as.numeric(VaR2)
+VaR12 <- cbind(VaRA, VaRB)
+Matris <- matrix(nrow = 2, ncol = 2)
+Matris[1,1] <- 1
+Matris[1,2] <- 0.25
+Matris[2,1] <- 0.25
+Matris[2,2] <- 1
+VaR12_t <- t(VaR12)
+VaR_porta <- as.numeric(sqrt(VaR12%*%Matris%*%VaR12_t))
+VaR_porta
+```
+
+
+# **Ejercicio 4**
+Usar la matriz de varianzas y covarianzas para determinar el Var del portafolio.
+
+```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+w_total <- VPN_total + VPN_total2
+w1 <- VPN_total/w_total
+w2 <- VPN_total2/w_total
+w <- cbind(w1,w2)
+p = 0.25
+Matr_var_cov <- matrix(nrow = 2, ncol = 2)
+Matr_var_cov[1,1] <- volatilidad_bono^2
+Matr_var_cov[1,2] <- volatilidad_bono*volatilidad_bono2*p
+Matr_var_cov[2,1] <- volatilidad_bono*volatilidad_bono2*p
+Matr_var_cov[2,2] <- volatilidad_bono2^2
+w_t <- t(w)
+VAR_PORTA <- as.numeric(sqrt(w%*%Matr_var_cov%*%w_t))
+VAR_PORTA <- (VAR_PORTA* (VPN_total+VPN_total2) * Z)/100
+VAR_PORTA
+```
+
+
+
+
+
+
+
