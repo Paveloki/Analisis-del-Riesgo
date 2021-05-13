@@ -56,13 +56,13 @@ library(PerformanceAnalytics)
 a) El precio del bono.
 
 ```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-Valor_nom <- 55000 #Valor nominal
+Valor_nom <- 18000 #Valor nominal
 tasa_cupon <- 0.05 #tasa semestral
-t <- 4 #Vencimiento años
+t <- 3 #Vencimiento años
 m <- 2 #Pagos al año
 n_flujos <- t*m
 Periodo_secu <- seq(1:n_flujos)
-tasa_interes <- 0.065 #
+tasa_interes <- 0.04 #
 ```
 
 
@@ -113,7 +113,7 @@ D_mod
 c) Si la volatilidad de la tasa de interés del bono es de 0.75%, determina la volatilidad del bono
 
 ```{r eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=TRUE}
-sigma <- 0.0075
+sigma <- 0.005
 volatilidad_bono <- sigma*D_mod*tasa_interes *100
 tibble(volatilidad_bono)
 ```

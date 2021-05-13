@@ -1,0 +1,65 @@
+---
+title: "Examen_final_2"
+author: "José Pablo Vázquez"
+date: "13/5/2021"
+output: html_document
+---
+
+```{r}
+library(quantmod)
+library(PerformanceAnalytics)
+library(lubridate)
+library(tibble)
+```
+
+
+```{r}
+clave_JV <- readline(prompt="Nombre del ticker del activo: ")
+fecha_inicial_JV <- readline(prompt="Fecha inicial: ")
+fecha_final_JV <- readline(prompt="Fecha final: ")
+n_JV <- as.numeric(readline(prompt="Cantidad de numeros aleatorios "))
+dt_JV <- as.numeric(readline(prompt="Cantidad de dias: "))
+```
+
+
+```{r}
+datos_JV <- new.env()
+loadSymbols(clave_JV, from = fecha_inicial_JV, to=fecha_final_JV, env=datos_JV)
+precio_JV <-datos_JV[[clave_JV]][,6]
+names(precio_JV) <- clave_JV
+rendimiento_JV <- na.omit(diff(log(precio_JV)))
+mu_JV <- mean(rendimiento_JV)
+sigma_JV <- as.numeric(sqrt(var(rendimiento_JV)))
+d_JV <- length(precio_JV)
+So_JV <- as.numeric(precio_JV[d_JV])
+simula_JV <- tibble(epsilon=rnorm(n_JV),dS=mu_JV*dt_JV*So_JV+sigma_JV*So_JV*sqrt(dt_JV)*epsilon)
+PE_JV <- So_JV+mean(simula_JV$dS)
+Media_ds_JV <-mean(simula_JV$dS) 
+DesS_ds_JV <- sqrt(var(simula_JV$dS))
+Z_JV <- qnorm(0.99)
+P_Sup_JV <- So_JV+Media_ds_JV+Z_JV*DesS_ds_JV
+P_Inf_JV <- So_JV+Media_ds_JV-Z_JV*DesS_ds_JV
+```
+```{r}
+print(paste("Precio inicial para la estimacion", So_JV))
+hist(simula_JV$dS)
+print(paste("precio final estimado", PE_JV))
+print(paste("Intervalo de confianza al 99%", Z_JV))
+print(paste("Precio maximo estimado", P_Sup_JV))
+print(paste("Precio minimo estimado", P_Inf_JV))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -168,6 +168,7 @@ dt <- 10
 simula <- tibble(epsilon=rnorm(n), dS=mu*dt*So+sigma*So*sqrt(dt)*epsilon)
 PE <- So+mean(simula$dS)
 PE
+simula
 ```
 La suma de esos dos valores sería el valor ESperado
 

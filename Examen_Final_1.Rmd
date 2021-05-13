@@ -1,0 +1,69 @@
+---
+title: "Examen Final Ejercicio1"
+author: "José Pablo Vázquez"
+date: "13/5/2021"
+output: html_document
+---
+
+```{r}
+Vol1JV = as.numeric(readline(prompt="Introduce Volatilidad anual del activo 1: "))
+Vol2JV = as.numeric(readline(prompt="Introduce Volatilidad anual del activo 2: "))
+Inv1JV = as.numeric(readline(prompt="Introduce la inversión en el activo 1: "))
+Inv2JV = as.numeric(readline(prompt="Introduce la inversión en el activo 2: "))
+CorrJV = as.numeric(readline(prompt="Introduce la correlación entre ambos activos: "))
+DiasJV = as.numeric(readline(prompt="Introduce los dias para la estimación del VaR: "))
+Vol1JV <- Vol1JV/sqrt(252)
+Vol2JV <- Vol2JV/sqrt(252)
+```
+
+```{r}
+Z90JV <- qnorm(0.1)
+Z95JV <- qnorm(0.05)
+Z99JV <- qnorm(0.01)
+
+VaR_individual_1_99JV <- Z99JV * Inv1JV * Vol1JV * sqrt(DiasJV)
+VaR_individual_2_99JV <- Z99JV * Inv2JV * Vol2JV * sqrt(DiasJV)
+
+VaR_individual_1_95JV <- Z95JV * Inv1JV * Vol1JV * sqrt(DiasJV)
+VaR_individual_2_95JV <- Z95JV * Inv2JV * Vol2JV * sqrt(DiasJV)
+
+VaR_individual_1_90JV <- Z90JV * Inv1JV * Vol1JV * sqrt(DiasJV)
+VaR_individual_2_90JV <- Z90JV * Inv2JV * Vol2JV * sqrt(DiasJV)
+
+w1_JV <- Inv1JV/(Inv1JV+Inv2JV)
+w2_JV <- 1-w1_JV
+wJV <- cbind(w1_JV, w2_JV)
+
+vector1JV <- c(Vol1JV^2,CorrJV)
+vector2JV <- c(CorrJV,Vol2JV^2)
+matriz_var_covarJV <- rbind(vector1JV, vector2JV)
+
+sigma_port_JV <- sqrt(wJV %*% matriz_var_covarJV %*% t(wJV))
+
+VaR_porta_99_JV <- (Inv1JV+Inv2JV) * sigma_port_JV * Z99JV * sqrt(DiasJV) 
+VaR_porta_95_JV <- (Inv1JV+Inv2JV) * sigma_port_JV * Z95JV * sqrt(DiasJV)
+VaR_porta_90_JV <- (Inv1JV+Inv2JV) * sigma_port_JV * Z90JV * sqrt(DiasJV)
+
+Beneficios_99_JV <- VaR_porta_99_JV - (VaR_individual_1_99JV + VaR_individual_2_99JV)
+Beneficios_95_JV <- VaR_porta_95_JV - (VaR_individual_1_95JV + VaR_individual_2_95JV)
+Beneficios_90_JV <- VaR_porta_90_JV - (VaR_individual_1_90JV + VaR_individual_2_90JV)
+
+w1_opt_JV <- (2*Vol2JV^2 - 2*CorrJV) / (2*Vol1JV^2 + 2*Vol2JV -4*CorrJV)
+w2_opt_JV <-  1-w1_opt_JV
+
+```
+
+```{r}
+print(paste("El VaR a 10 dias al 99% considerando solo el activo 1 es: ", paste(VaR_individual_1_99JV,"S"), " mientras que al 95%: ",paste(VaR_individual_1_95JV,"$"), " y al 90%: ",paste(VaR_individual_1_90JV,"$")))
+
+print(paste("El VaR a 10 dias al 99% considerando solo el activo 2 es: ",paste(VaR_individual_2_99JV,"$"), " mientras que al 95%: ",paste(VaR_individual_2_95JV,"$"), " y al 90%: ",paste(VaR_individual_2_90JV,"$") ))
+
+print(paste("El VaR a 10 dias del portafolio al 99%: ",paste(VaR_porta_99_JV,"$"), " mientras que al 95%: ",paste(VaR_porta_95_JV,"$"), " y al 90%: ",paste(VaR_porta_90_JV,"$") ))
+
+print(paste("Si diversificas con un VaR al 99% obtendrias el beneficio de: ", paste(Beneficios_99_JV,"$"), " mientras que al 95%: ",paste(Beneficios_95_JV,"$"), " y al 90%: ",paste(Beneficios_90_JV,"$")))
+
+print(paste("La composicion de los pesos, con un valor w1 de: ",w1_opt_JV," y w2: ",w2_opt_JV))
+```
+
+
+

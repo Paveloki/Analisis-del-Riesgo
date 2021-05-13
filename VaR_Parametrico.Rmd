@@ -30,8 +30,8 @@ precios <- merge.xts(precio1,precio2)
 
 ```{r}
 n <- nrow(precios)
-a1 <- 500 #Cantidad de acciones del activo 1
-a2 <- 700 #Cantidad de acciones del activo 2
+a1 <- 100 #Cantidad de acciones del activo 1
+a2 <- 50 #Cantidad de acciones del activo 2
 pi_a1 <- as.numeric(precios[n,1])
 pi_a2 <- as.numeric(precios[n,2])
 vi <- pi_a1*a1 + pi_a2*a2
@@ -116,6 +116,7 @@ VaR95 <- vi*sigma_port*Z95
 
 ```{r}
 VaR90 <- vi*sigma_port*Z90
+tibble(VaR99, VaR95, VaR90)
 ```
 
 Se asumio que el comportamiento de la funcion es normal estandar.
